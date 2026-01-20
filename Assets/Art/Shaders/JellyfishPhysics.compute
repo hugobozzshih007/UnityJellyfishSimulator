@@ -1,0 +1,256 @@
+#define IS_COMPUTE_SHADER
+
+#pragma kernel CSMain_UpdatePositions
+#pragma kernel CSMain_InitSprings
+#pragma kernel CSMain_CalculateForces
+#pragma kernel CSMain_ApplyMovements
+#pragma kernel CSMain_UpdateOralArms
+
+#include "MedusaBellFormula.hlsl" 
+
+#define THREAD_GROUP_SIZE 64
+
+// --- Structs ---
+struct SpringData {
+    int indexA;
+    int indexB;
+    float stiffness;
+    float restLength;
+};
+
+struct BridgeData {
+    int vertexId;
+    int medusaId;
+    float zenith;
+    float azimuth;
+    float4 offset;
+    float isBottom;
+    float directionalOffset;
+    float isFixed; 
+    float padding;
+};
+
+struct OralArmBridgeData {
+    int4 nodeIndices;
+    float4 sideData;
+    int visualVertexId;
+    int3 padding;
+};
+
+// --- Buffers ---
+RWStructuredBuffer<MedusaPhysicsData> _VertexData;
+RWStructuredBuffer<SpringData> _SpringData;
+RWStructuredBuffer<float3> _ForceData;
+StructuredBuffer<BridgeData> _BridgeData;
+StructuredBuffer<int2> _InfluencerPtrs;
+StructuredBuffer<int> _Influencers;
+StructuredBuffer<OralArmBridgeData> _OralArmData;
+
+// --- Uniforms ---
+float4x4 _MedusaMatrix;
+float _MedusaPhase;
+int _VertexCount;
+int _SpringCount;
+int _BridgeCount;
+int _OralArmCount;
+float _Dampening;
+float3 _CamPos;
+float _DeltaTime;
+int _InitPhase;
+
+// ★★★ 新增：水流 Uniforms ★★★
+float3 _WaterCurrent;
+float _TurbulenceStrength;
+float _TurbulenceFreq;
+float _TurbulenceSpeed;
+float _Time;
+
+// ------------------------------------------------------------------
+// Helper: 亂流計算
+// ------------------------------------------------------------------
+float3 GetTurbulence(float3 pos, float time)
+{
+    float3 noise;
+    noise.x = sin(pos.y * _TurbulenceFreq + time * _TurbulenceSpeed);
+    noise.y = sin(pos.z * _TurbulenceFreq * 0.7 + time * _TurbulenceSpeed * 1.3) * 0.5;
+    noise.z = sin(pos.x * _TurbulenceFreq * 1.2 + time * _TurbulenceSpeed * 0.8 + 123.45);
+    return noise;
+}
+
+// ------------------------------------------------------------------
+// Kernel: Update Positions
+// ------------------------------------------------------------------
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
+void CSMain_UpdatePositions (uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if (idx >= (uint)_BridgeCount) return;
+
+    BridgeData bridge = _BridgeData[idx];
+
+    if (_InitPhase != 1 && bridge.isFixed < 0.5) return;
+
+    float3 bellPos;
+    float3 dummyNormal;
+    GetBellPosition_float(
+        _MedusaPhase, bridge.zenith, bridge.azimuth, bridge.isBottom, 
+        float4(-1, -1, -1, -1), float4(0, 0, 0, 0), bellPos, dummyNormal
+    );
+    float3 offset = bridge.offset.xyz;
+    if (abs(bridge.directionalOffset) > 0.0) {
+        float3 bellPosNext;
+        GetBellPosition_float(
+            _MedusaPhase, bridge.zenith + 0.001, bridge.azimuth, bridge.isBottom, 
+            float4(-1, -1, -1, -1), float4(0, 0, 0, 0), bellPosNext, dummyNormal
+        );
+        float3 dir = normalize(bellPosNext - bellPos);
+        offset = dir * bridge.directionalOffset;
+    }
+
+    float3 finalPos = bellPos + offset;
+    float3 worldPos = mul(_MedusaMatrix, float4(finalPos, 1.0)).xyz;
+
+    _VertexData[bridge.vertexId].position = worldPos;
+    _VertexData[bridge.vertexId].isFixed = bridge.isFixed;
+    _ForceData[bridge.vertexId] = float3(0,0,0);
+}
+
+// ------------------------------------------------------------------
+// Kernel: Init Springs
+// ------------------------------------------------------------------
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
+void CSMain_InitSprings (uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if (idx >= (uint)_SpringCount) return;
+
+    SpringData s = _SpringData[idx];
+    float3 p0 = _VertexData[s.indexA].position;
+    float3 p1 = _VertexData[s.indexB].position;
+    float dist = distance(p0, p1);
+    s.restLength = dist * s.restLength;
+    
+    _SpringData[idx] = s;
+}
+
+// ------------------------------------------------------------------
+// Kernel: Calculate Forces (修正版：使用 Drag 混合)
+// ------------------------------------------------------------------
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
+void CSMain_CalculateForces (uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if (idx >= (uint)_VertexCount) return;
+
+    MedusaPhysicsData v = _VertexData[idx];
+    
+    // 固定點不受力
+    if (v.isFixed > 0.5) return;
+
+    // 讀取當前位移量 (Velocity)
+    float3 velocity = _ForceData[idx];
+
+    // ★★★ 核心修正：水流阻力模型 ★★★
+    // ★ 1. 讀取漸層權重 (Influence)
+    // uvY = 0 (根部) -> weight = 0 (完全不受水流影響)
+    // uvY = 1 (尾部) -> weight = 1 (完全受水流影響)
+    // 使用 pow 讓過渡更自然 (根部更穩)
+    float flowWeight = pow(v.uvY, 2.0);
+
+    
+    // A. 計算目標流速 (位移量)
+    float3 turbulence = GetTurbulence(v.position, _Time);
+    // 將權重乘進去：只有尾端會被推得遠
+    float3 targetFlowVector = (_WaterCurrent + (turbulence * _TurbulenceStrength)) * _DeltaTime;
+    targetFlowVector *= flowWeight;
+
+    // B. 混合速度 (Viscosity Blend)
+    // 讓當前速度慢慢趨近於水流速度，而不是無限疊加
+    // (1.0 - _Dampening) 通常是很小的值 (例如 0.002)，代表混合率
+    float dragFactor = (1.0 - _Dampening);
+    
+    // Lerp: 從 "當前慣性" 過渡到 "水流帶動"
+    velocity = lerp(velocity, targetFlowVector, dragFactor);
+
+    // ----------------------------------
+
+    int2 ptr = _InfluencerPtrs[idx];
+    int start = ptr.x;
+    int count = ptr.y;
+
+    // 加上彈簧力 (保持不變)
+    for (int i = 0; i < count; i++)
+    {
+        int rawVal = _Influencers[start + i];
+        int springIdx = abs(rawVal) - 1;
+        SpringData s = _SpringData[springIdx];
+
+        int otherVertexIdx = (s.indexA == (int)idx) ? s.indexB : s.indexA;
+        float3 otherPos = _VertexData[otherVertexIdx].position; 
+
+        float3 delta = otherPos - v.position;
+        float dist = length(delta);
+        float validDist = max(dist, 0.000001);
+        
+        float3 springForce = (validDist - s.restLength) * s.stiffness * (delta / validDist);
+        velocity += springForce * 0.5;
+    }
+
+    _ForceData[idx] = velocity;
+}
+
+// ------------------------------------------------------------------
+// Kernel: Apply Movements
+// ------------------------------------------------------------------
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
+void CSMain_ApplyMovements (uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if (idx >= (uint)_VertexCount) return;
+
+    MedusaPhysicsData v = _VertexData[idx];
+    if (v.isFixed < 0.5) {
+        float3 velocity = _ForceData[idx];
+        v.position += velocity;
+    } else {
+        _ForceData[idx] = float3(0,0,0);
+    }
+    
+    _VertexData[idx] = v;
+}
+
+// ------------------------------------------------------------------
+// Kernel: Update Oral Arms
+// ------------------------------------------------------------------
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
+void CSMain_UpdateOralArms (uint3 id : SV_DispatchThreadID)
+{
+    uint idx = id.x;
+    if (idx >= (uint)_OralArmCount) return;
+
+    OralArmBridgeData data = _OralArmData[idx];
+
+    float3 p0 = _VertexData[data.nodeIndices.x].position;
+    float3 p1 = _VertexData[data.nodeIndices.y].position;
+    float3 p2 = _VertexData[data.nodeIndices.z].position;
+    float3 p3 = _VertexData[data.nodeIndices.w].position;
+
+    float3 top = (p0 + p1) * 0.5;
+    float3 bottom = (p2 + p3) * 0.5;
+    float3 left = (p0 + p2) * 0.5;
+    float3 right = (p1 + p3) * 0.5;
+
+    float3 bitangent = right - left;
+    float3 tangent = bottom - top;
+    float3 pos = (top + bottom) * 0.5;
+
+    float3 normal = cross(tangent, bitangent);
+    normal = normalize(normal) * data.sideData.z;
+    normal += normalize(tangent) * data.sideData.y;
+    normal += normalize(bitangent) * data.sideData.x;
+
+    float3 finalNormal = normalize(normal);
+    _VertexData[data.visualVertexId].position = pos + normal * data.sideData.w;
+    _VertexData[data.visualVertexId].normal = finalNormal;
+    _VertexData[data.visualVertexId].isFixed = 1.0; 
+}
