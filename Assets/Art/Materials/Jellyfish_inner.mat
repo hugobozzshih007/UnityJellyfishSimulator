@@ -61,7 +61,7 @@ Material:
     - _CausticSpeed: 0.2
     - _CausticTiling: 0
     - _Charge: 0
-    - _Phase: 0.72572654
+    - _Phase: 5.7033653
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Speed: 2

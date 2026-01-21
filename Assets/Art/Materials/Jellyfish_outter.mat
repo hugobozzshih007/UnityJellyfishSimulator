@@ -56,12 +56,12 @@ Material:
     m_Ints: []
     m_Floats:
     - _BottomFactor: 0
-    - _CausticIntensity: 5
+    - _CausticIntensity: 1.4285715
     - _CausticScale: 100
     - _CausticSpeed: 0.4
     - _CausticTiling: 0.25
     - _Charge: 0
-    - _Phase: 0.72572654
+    - _Phase: 5.7033653
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Speed: 2
