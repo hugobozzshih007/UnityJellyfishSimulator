@@ -26,6 +26,7 @@ public class VerletPhysics
 {
     // ★★★ 1. 新增：全域水流參數 ★★★
     [Header("Global Water Physics")]
+    public float waterDrag = 0.998f;
     public Vector3 waterCurrent = new Vector3(0.5f, 0f, 0.2f); // 恆定水流方向
     public float turbulenceStrength = 1f; // 亂流強度 (建議從小開始調)
     public float turbulenceFreq = 1f;     // 亂流頻率 (空間密度)
@@ -237,7 +238,7 @@ public class VerletPhysics
         Vector3 targetPosition = _medusaRef.transform.position;
         Quaternion targetRotation = _medusaRef.transform.rotation;
         
-        _computeShader.SetFloat("_Dampening", 0.998f); 
+        _computeShader.SetFloat("_Dampening", waterDrag); 
         _computeShader.SetInt("_InitPhase", 0);
         if (Camera.main != null)
              _computeShader.SetVector("_CamPos", Camera.main.transform.position);

@@ -35,8 +35,10 @@ void MedusaPatternFull_float(
     float2 MeshUV, 
     float TimeZ,
     float Phase,
-    float3 PositionLocal, 
-    
+    float3 PositionLocal,
+    float3 DarkStripColor,
+    float3 EmitColor, 
+    float3 BellColor,
     out float3 OutBaseColor,
     out float3 OutEmission,
     out float OutMetallic,
@@ -113,9 +115,9 @@ void MedusaPatternFull_float(
     // 使用 FBM Noise 來做顏色，細節會非常豐富
     float colorNoise = noise * 0.2; 
     
-    float3 colWhite = float3(1.0, 0.7, 0.3) - colorNoise;
-    float3 colOrange = float3(1.0, 0.5, 0.1) - colorNoise;
-    float3 colRed = float3(1.0, 0.2, 0.1) - colorNoise;
+    float3 colWhite = BellColor - colorNoise;
+    float3 colOrange = DarkStripColor - colorNoise;
+    float3 colRed = EmitColor - colorNoise;
 
     OutMetallic = 1.0 - resX; 
 
@@ -124,7 +126,7 @@ void MedusaPatternFull_float(
     OutBaseColor = color;
 
     // --- 6. 發光計算 ---
-    float pulse = pow(sin(Phase + PositionLocal.y) * 0.5 + 0.5, 10.0) * 2.0;
+    float pulse = pow(sin(Phase*1.5 + PositionLocal.y) * 0.5 + 0.6, 10.0) * 2.0;
     
     float3 emissive = colRed * (1.0 - resY) * pulse;
     emissive += colRed * resY * 0.105;

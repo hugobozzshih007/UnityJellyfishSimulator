@@ -9,13 +9,13 @@ public class MedusaOralArms : MonoBehaviour
     [Header("Physics Settings")]
     [Tooltip("★ 抗拉伸硬度：控制管子長度。設高 (0.8~1.0) 就不會被拉長。")]
     [Range(0.1f, 1.0f)]
-    public float stretchStiffness = 0.9f; 
+    public float stretchStiffness = 0.1f; 
 
     [Tooltip("根部柔軟度 (只影響彎曲)")]
-    public float baseBendStiffness = 0.2f; 
+    public float baseBendStiffness = 0.1f; 
 
     [Tooltip("尾部柔軟度 (只影響彎曲)")]
-    public float tipBendStiffness = 0.0001f;
+    public float tipBendStiffness = 0.005f;
     
     [Header("Ruffle Growth")]
     [Tooltip("皺摺生長起始點")]
@@ -39,10 +39,10 @@ public class MedusaOralArms : MonoBehaviour
     public float tubeThinStart = 0f;
 
     [Tooltip("變細後的管子比例")]
-    public float tubeThinScale = 0.1f;
+    public float tubeThinScale = 0.05f;
 
     [Header("Twist Settings")]
-    public float totalTwist = 900.0f;
+    public float totalTwist = 1080.0f;
     
     private Medusa medusa;
     private Mesh mesh;
@@ -322,8 +322,13 @@ public class MedusaOralArms : MonoBehaviour
             mf.mesh = mesh;
         }
         
-        Shader shader = Shader.Find("Shader Graphs/OralArms"); 
-        if (shader != null) meshRenderer.material = new Material(shader);
+        Shader shader = Shader.Find("Shader Graphs/OralArms");
+        if (shader != null)
+        {
+            Material mat = new Material(shader);
+            mat.renderQueue = 2950;
+            meshRenderer.material = mat;
+        }
         
         propBlock = new MaterialPropertyBlock();
     }
