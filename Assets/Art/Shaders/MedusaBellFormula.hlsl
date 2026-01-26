@@ -7,8 +7,8 @@
 // ★ 修改 1: 將 VertexData 改名為 MedusaPhysicsData 以避免衝突
 struct MedusaPhysicsData {
     float3 position; // 0 offset
-    float3 normal;   // 12 offset (新增!)
     float isFixed;   // 24 offset
+    float3 normal;   // 12 offset (新增!)
     float uvY;     // ★ 新增：0.0 = 根部, 1.0 = 尾部
 };
 

@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 public struct VertexData
 {
     public Vector3 position;
-    public Vector3 normal; 
     public float isFixed; // 1.0 = Fixed, 0.0 = Free
+    public Vector3 normal; 
     public float uvY;
 }
 
@@ -102,8 +102,8 @@ public class VerletPhysics
         float fixedVal = isFixed ? 1.0f : 0.0f; 
         vertices.Add(new VertexData { 
             position = position, 
-            normal = Vector3.up, 
             isFixed = fixedVal, 
+            normal = Vector3.up, 
             uvY = progress // ★ 存入進度
         });
         vertexSpringConnections.Add(new List<int>());
