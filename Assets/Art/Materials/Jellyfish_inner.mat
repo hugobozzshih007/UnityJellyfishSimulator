@@ -61,10 +61,11 @@ Material:
     - _CausticSpeed: 0.2
     - _CausticTiling: 0
     - _Charge: 0
-    - _Phase: 0.37425485
+    - _Phase: 5.883441
     - _QueueControl: 1
     - _QueueOffset: 0
     - _Speed: 2
+    - _XRMotionVectorsPass: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 0.9, b: 0.8, a: 1}
     - _BellColor: {r: 0.9254902, g: 0.45772424, b: 0.03137254, a: 1}
