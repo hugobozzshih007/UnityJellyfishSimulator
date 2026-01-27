@@ -4,8 +4,8 @@
 // 定義與 C# 和 Compute Shader 一致的結構
 struct VertexData {
     float3 position;
-    float3 normal;   // ★ 必須補上這行 (即使下面函數沒用到它)
     float isFixed;
+    float3 normal;   // ★ 必須補上這行 (即使下面函數沒用到它)
     float uvY;
 };
 
