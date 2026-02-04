@@ -5353,6 +5353,7 @@ MonoBehaviour:
   isReady: 0
   phase: 0
   charge: 0
+  controller: {fileID: 0}
   tentacles: {fileID: 0}
   oralArms: {fileID: 0}
   jellyfishMaterial: {fileID: 2100000, guid: 48a4780308b64464fa94faf9d26078d7, type: 2}
