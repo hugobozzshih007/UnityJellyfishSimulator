@@ -3,55 +3,78 @@ using UnityEngine;
 public class MedusaCameraTracker : MonoBehaviour
 {
     [Header("Target")]
-    public Transform target;        // 拖入你的 Medusa GameObject
-    public Vector3 offset;          // 相機與水母的相對距離 (留空會自動計算)
+    public Medusa medusaTarget;     
     
-    [Header("Settings")]
-    public float smoothSpeed = 5f;  // 跟隨的平滑度 (數值越大越緊)
-    public bool autoOffset = true;  // 是否在開始時自動抓取目前的相對距離
+    [Header("Positioning")]
+    public float distance = 12f;      // 相機與水母的距離
+    public float heightOffset = 2f;   // 垂直高度
+    public float lateralOffset = 6f;  // 側面偏移量 (關鍵：產生側面感的數值)
+    public float bodyCenterOffset = 5f; // 向後偏移量，將重心移向觸手
+
+    [Header("Follow Dynamics")]
+    [Range(0.1f, 1.0f)]
+    public float followSmoothTime = 0.5f; // 位移延遲 (數值越大，水母衝出去的感覺越強)
+    public float rotationSmooth = .5f;    // 旋轉延遲 (數值小，轉彎時會拍到更多側面)
     
-    [Header("Teleport Handling")]
-    public float teleportThreshold = 10.0f; // 如果目標瞬間移動超過這距離，相機就直接瞬移
+    private Vector3 _currentVelocity;
+    private Vector3 _sideDirection;
 
     void Start()
     {
-        if (target == null)
-        {
-            Debug.LogWarning("Camera has no target!");
-            return;
-        }
-
-        // 如果開啟自動計算，就以目前的場景擺設作為標準偏移量
-        if (autoOffset)
-        {
-            offset = transform.position - target.position;
-        }
+        // 初始時隨機選擇從左側還是右側觀看
+        _sideDirection = Random.value > 0.5f ? Vector3.right : Vector3.left;
     }
 
-    // 使用 LateUpdate 確保在水母的所有 Update (移動) 完成後才移動相機
-    // 這樣可以完全消除畫面抖動 (Jitter)
     void LateUpdate()
     {
-        if (target == null) return;
+        if (medusaTarget == null || !medusaTarget.isReady) return;
 
-        // 計算目標位置
-        Vector3 desiredPosition = target.position + offset;
+        Transform t = medusaTarget.transform;
 
-        // 檢查是否發生了 "傳送" (例如水母從頂部回到底部)
-        float dist = Vector3.Distance(transform.position, desiredPosition);
-        
-        if (dist > teleportThreshold)
+        // 1. 定義「視覺重心」(包含觸手在內的中心點)
+        // 從頭部座標沿著反前進方向偏移，讓整體水母對齊畫面中心
+        Vector3 visualCenter = t.position - (t.up * bodyCenterOffset);
+
+        // 2. 計算側面與後方的混合向量
+        // 我們不使用固定的座標，而是根據水母的旋轉動態計算側向向量
+        Vector3 rightVec = Vector3.Cross(t.up, Vector3.up).normalized;
+        if (rightVec.sqrMagnitude < 0.01f) rightVec = t.right; // 避免萬向鎖
+
+        // 目標位置 = 重心點 + (反向拉開) + (向上拉開) + (向側邊拉開)
+        Vector3 desiredPos = visualCenter 
+                           - (t.up * distance * 0.25f) 
+                           + (Vector3.up * heightOffset) 
+                           + (rightVec * lateralOffset * (Vector3.Dot(_sideDirection, Vector3.right) > 0 ? 1 : -1));
+
+        // 3. 實作延遲跟隨 (SmoothDamp)
+        // 這是解決「水母前進後相機再跟上」的關鍵邏輯
+        transform.position = Vector3.SmoothDamp(
+            transform.position, 
+            desiredPos, 
+            ref _currentVelocity, 
+            followSmoothTime
+        );
+
+        // 4. 處理電影感旋轉
+        // 相機看向視覺重心 (visualCenter)，因為相機在側後方，會拍到極具張力的側面
+        Vector3 lookDir = visualCenter - transform.position;
+        if (lookDir != Vector3.zero)
         {
-            // 如果距離太遠，判定為傳送，直接瞬移過去 (避免畫面快速飛過)
-            transform.position = desiredPosition;
+            Quaternion targetRot = Quaternion.LookRotation(lookDir);
+            
+            // 使用較慢的 Slerp，當水母轉彎時，鏡頭會「跟不上」，從而自動捕捉到側視角
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, 
+                targetRot, 
+                rotationSmooth * Time.deltaTime
+            );
         }
-        else
+
+        // 5. 處理傳送 (Teleport) 避免畫面飛掠
+        if (Vector3.Distance(transform.position, t.position) > 60f)
         {
-            // 否則進行平滑移動
-            transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
+            transform.position = desiredPos;
+            _currentVelocity = Vector3.zero;
         }
-        
-        // 如果你也希望相機旋轉跟著水母轉 (通常水母這類生物不需要，保持水平比較好看)
-        // transform.LookAt(target); 
     }
 }
