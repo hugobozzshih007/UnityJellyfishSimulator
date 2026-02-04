@@ -420,12 +420,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MedusaCameraTracker
   medusaTarget: {fileID: 407070757}
-  distance: 15
-  angleOffset: {x: 20, y: 0, z: 0}
-  smoothSpeed: 5
+  distance: 30
+  heightOffset: 5
+  lateralOffset: 6
+  bodyCenterOffset: 3
+  followSmoothTime: 0.5
   rotationSmooth: 2
-  lookAheadFactor: 2
-  breatheAmount: 0.5
 --- !u!1 &367076435
 GameObject:
   m_ObjectHideFlags: 0
