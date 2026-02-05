@@ -126,7 +126,7 @@ void MedusaPatternFull_float(
     OutBaseColor = color;
 
     // --- 6. 發光計算 ---
-    float pulse = pow(sin(Phase*1.5 + PositionLocal.y) * 0.5 + 0.6, 10.0) * 2.0;
+    float pulse = pow(sin(Phase*1.0 + PositionLocal.y) * 0.5 + 0.5, 10.0) * 2.0;
     
     float3 emissive = colRed * (1.0 - resY) * pulse;
     emissive += colRed * resY * 0.105;
