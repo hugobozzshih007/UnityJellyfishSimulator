@@ -1,45 +1,62 @@
 using UnityEngine;
 
-[ExecuteAlways] // 讓您在編輯器不按 Play 也能看到燈光變化 (選用)
+[ExecuteAlways]
 public class DepthLightController : MonoBehaviour
 {
     [Header("References")]
     public Light directionalLight;
     public Transform jellyfishTarget;
-    public Material bellOutter;
 
     [Header("Depth Settings")]
     public float deepestY = -50f;
-    public float surfaceY = 0f;
+    public float surfaceY = 50f; 
 
-    [Header("Sun Intensity")]
-    public float minLight = 0.5f;
-    public float maxLight = 2.0f;
+    [Header("Angle Settings")]
+    public float maxVisibleAngle = 160f; 
+    public Vector3 lightSourceDirection = Vector3.up; 
 
-    [Header("Global Caustic Settings")]
-    // ★ 關鍵：這個字串必須跟 Shader Graph 裡的 Reference 一模一樣
+    [Header("Caustic Intensity")]
     public string globalCausticName = "_CausticIntensity"; 
     public float minCaustic = 0.0f;
-    public float maxCaustic = 3.0f;
+    public float maxCaustic = 1.0f;
+
+    [Header("Materials")] 
+    public Material outerBell;
+    public Material innerBell;
 
     void Update()
     {
         if (jellyfishTarget == null) return;
 
-        // 1. 計算深度 (0 = 深淵, 1 = 水面)
-        float t = Mathf.InverseLerp(deepestY, surfaceY, jellyfishTarget.position.y);
+        // 1. 深度權重 (0 = 深處, 1 = 表面)
+        float t_depth = Mathf.InverseLerp(deepestY, surfaceY, jellyfishTarget.position.y);
 
-        // 2. 控制 Directional Light
-        if (directionalLight != null)
+        // 2. 角度權重 (0 = 背光, 1 = 正對光)
+        float angle = Vector3.Angle(jellyfishTarget.forward, lightSourceDirection);
+        float t_angle = 0f;
+        if (angle <= maxVisibleAngle)
         {
-            directionalLight.intensity = Mathf.Lerp(minLight, maxLight, t);
+            t_angle = 1.0f - (angle / maxVisibleAngle);
         }
 
-        // 3. ★ 控制全域 Shader 變數
-        // 這行程式碼會影響場景中 "所有" 使用這個變數名稱的材質
-        // 不管是 Bell, OralArms, Tentacles，甚至是剛生成的 Plankton
-        float currentCaustic = Mathf.Lerp(minCaustic, maxCaustic, t);
-        if(bellOutter != null)
-            bellOutter.SetFloat(globalCausticName, currentCaustic);
+        // 3. 【核心修正】取兩者之中的最小值作為權重
+        // 這樣只要有一方過低，Caustic 就會消失；反之則能維持較佳亮度
+        float outerlWeight = Mathf.Min(t_depth, t_angle);
+        float outerIntensity = Mathf.Lerp(minCaustic, maxCaustic, outerlWeight);
+        Debug.LogWarning("intensity: "+ outerIntensity.ToString());
+        float rT_angle = 1.0f - t_angle; 
+        float innerlWeight = Mathf.Min(t_depth, rT_angle);
+        float innerIntensity = Mathf.Lerp(minCaustic, maxCaustic, innerlWeight);
+        Debug.LogWarning("intensity: "+ innerIntensity.ToString());
+        // 4. 全域套用
+        if(outerBell != null)
+            outerBell.SetFloat(globalCausticName, outerIntensity);
+        if(innerBell != null)
+            innerBell.SetFloat(globalCausticName, innerIntensity);
+
+        if (directionalLight != null)
+        {
+            directionalLight.intensity = Mathf.Lerp(0.5f, 2.0f, t_depth);
+        }
     }
 }
