@@ -28,9 +28,9 @@ public class VerletPhysics
     [Header("Global Water Physics")]
     public float waterDrag = 0.998f;
     public Vector3 waterCurrent = new Vector3(0.5f, 0f, 0.2f); // 恆定水流方向
-    public float turbulenceStrength = 1f; // 亂流強度 (建議從小開始調)
-    public float turbulenceFreq = 1f;     // 亂流頻率 (空間密度)
-    public float turbulenceSpeed = 0.8f;    // 亂流速度 (時間變化)
+    public float turbulenceStrength = 0f; // 亂流強度 (建議從小開始調)
+    public float turbulenceFreq = 0f;     // 亂流頻率 (空間密度)
+    public float turbulenceSpeed = 0f;    // 亂流速度 (時間變化)
 
     public List<VertexData> vertices = new List<VertexData>();
     public List<SpringData> springs = new List<SpringData>();

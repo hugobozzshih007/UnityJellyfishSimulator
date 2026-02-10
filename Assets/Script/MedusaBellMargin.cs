@@ -28,9 +28,9 @@ public class MedusaBellMargin
 
         // --- 1. 建立物理結構 (Verlet Geometry) ---
         
-        int bellMarginWidth = 5 * subdivisions;
+        int bellMarginWidth = 5* subdivisions;
         this.bellMarginWidth = bellMarginWidth;
-        int bellMarginHeight = 8;
+        int bellMarginHeight = 4;
 
         bellMarginRows.Clear();
 
@@ -73,7 +73,7 @@ public class MedusaBellMargin
                 {
                     int muscleVertexId = physics.AddVertex(Vector3.zero, true);
                     bridge.RegisterVertex(medusaId, muscleVertexId, zenith, azimuth, false, Vector3.zero, -offset.y, true);
-                    physics.AddSpring(vertexId, muscleVertexId, 0.01f / Mathf.Pow(y, 3), 0);
+                    physics.AddSpring(vertexId, muscleVertexId, 0.01f / Mathf.Pow(y+1, 3), 0);
                 }
             }
             // 閉合圓環
@@ -90,16 +90,21 @@ public class MedusaBellMargin
         {
             for (int x = 0; x < bellMarginWidth; x++)
             {
-                float springStrength = 0.002f;
-                int v0 = bellMarginRows[y][x];
-                int v1 = bellMarginRows[y - 1][x];
-                int v2 = bellMarginRows[y][x + 1];
-                int v3 = bellMarginRows[y - 1][x + 1];
+                float structuralStrength = 0.02f; 
+                float shearStrength = 0.002f;
 
-                physics.AddSpring(v0, v1, springStrength, .8f);
-                physics.AddSpring(v0, v2, springStrength, .8f);
-                physics.AddSpring(v1, v2, springStrength, .8f);
-                physics.AddSpring(v0, v3, springStrength, .8f);
+                int v0 = bellMarginRows[y][x];         // 當前點
+                int v1 = bellMarginRows[y - 1][x];     // 上方點
+                int v2 = bellMarginRows[y][x + 1];     // 右方點
+                int v3 = bellMarginRows[y - 1][x + 1]; // 右上方點
+
+                // 垂直與水平彈簧 (Structural)
+                physics.AddSpring(v0, v1, structuralStrength, 1.2f);
+                physics.AddSpring(v0, v2, structuralStrength, 1.2f);
+
+                // 交叉彈簧 (Shear) - 增加此部分能大幅減少網面變形
+                physics.AddSpring(v0, v3, shearStrength, 1f);
+                physics.AddSpring(v1, v2, shearStrength, 1f);
             }
         }
 
