@@ -56,13 +56,13 @@ public class MedusaOralArms : MonoBehaviour
     public float ruffleFoldAmt = 2.5f;  
     public float noiseFreq = .65f;      
 
-    public void Initialize(Medusa medusa)
+    public void Initialize(Medusa medusa, Material material)
     {
         this.medusa = medusa;
-        CreateGeometry();
+        CreateGeometry(material);
     }
 
-    void CreateGeometry()
+    void CreateGeometry(Material material = null)
     {
         VerletPhysics physics = medusa.physics;
         MedusaVerletBridge bridge = medusa.bridge;
@@ -220,9 +220,18 @@ public class MedusaOralArms : MonoBehaviour
             meshRenderer = obj.AddComponent<MeshRenderer>();
             obj.AddComponent<MeshFilter>().mesh = mesh;
         }
+
+        if (material == null)
+        {
+            Shader shader = Shader.Find("Shader Graphs/OralArms");
+            if (shader != null) 
+                meshRenderer.material = new Material(shader) { renderQueue = 2950 };
+        }
+        else
+        {
+            meshRenderer.material = material;
+        }
         
-        Shader shader = Shader.Find("Shader Graphs/OralArms");
-        if (shader != null) meshRenderer.material = new Material(shader) { renderQueue = 2950 };
         propBlock = new MaterialPropertyBlock();
     }
 

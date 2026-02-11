@@ -29,7 +29,8 @@ public class Medusa : MonoBehaviour
     public MedusaTentacles tentacles;
     public MedusaOralArms oralArms;
     public Material jellyfishMaterial; 
-    public Material jellyfishMaterialInside; 
+    public Material jellyfishMaterialInside;
+    public Material oralArmMaterial;
     public ComputeShader jellyfishComputeShader;
     public VerletPhysics physics;
     public MedusaVerletBridge bridge;
@@ -67,7 +68,7 @@ public class Medusa : MonoBehaviour
         tentacles = gameObject.AddComponent<MedusaTentacles>();
         tentacles.Initialize(this);
         oralArms = gameObject.AddComponent<MedusaOralArms>();
-        oralArms.Initialize(this);
+        oralArms.Initialize(this, oralArmMaterial);
         
         physics.Bake(bridge, this);
         bridge.Bake();

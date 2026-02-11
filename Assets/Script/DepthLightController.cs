@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 [ExecuteAlways]
 public class DepthLightController : MonoBehaviour
@@ -23,6 +24,7 @@ public class DepthLightController : MonoBehaviour
     [Header("Materials")] 
     public Material outerBell;
     public Material innerBell;
+    public Material oralArms; 
 
     void Update()
     {
@@ -30,7 +32,8 @@ public class DepthLightController : MonoBehaviour
 
         // 1. 深度權重 (0 = 深處, 1 = 表面)
         float t_depth = Mathf.InverseLerp(deepestY, surfaceY, jellyfishTarget.position.y);
-
+        float emissionOralArms = Mathf.Lerp(0.1f, 2f, t_depth);
+        emissionOralArms = Mathf.Clamp01(emissionOralArms);
         // 2. 角度權重 (0 = 背光, 1 = 正對光)
         float angle = Vector3.Angle(jellyfishTarget.forward, lightSourceDirection);
         float t_angle = 0f;
@@ -57,6 +60,11 @@ public class DepthLightController : MonoBehaviour
         if (directionalLight != null)
         {
             directionalLight.intensity = Mathf.Lerp(0.5f, 2.0f, t_depth);
+        }
+
+        if (oralArms != null)
+        {
+            oralArms.SetFloat("_EmissionIntensity", emissionOralArms);
         }
     }
 }

@@ -270,6 +270,7 @@ MonoBehaviour:
   maxCaustic: 1
   outerBell: {fileID: 2100000, guid: 48a4780308b64464fa94faf9d26078d7, type: 2}
   innerBell: {fileID: 2100000, guid: e744df7e3685a426694b36c9b1141278, type: 2}
+  oralArms: {fileID: 2100000, guid: 59c07e92637a84561aa3a27c07eda18a, type: 2}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -5358,7 +5359,7 @@ MonoBehaviour:
   isReady: 0
   phase: 0
   charge: 0
-  frequencyBoost: 0.42
+  frequencyBoost: 0.5
   currentFreqMultiplier: 1
   freqLerpSpeed: 2
   controller: {fileID: 0}
@@ -5366,6 +5367,7 @@ MonoBehaviour:
   oralArms: {fileID: 0}
   jellyfishMaterial: {fileID: 2100000, guid: 48a4780308b64464fa94faf9d26078d7, type: 2}
   jellyfishMaterialInside: {fileID: 2100000, guid: e744df7e3685a426694b36c9b1141278, type: 2}
+  oralArmMaterial: {fileID: 2100000, guid: 59c07e92637a84561aa3a27c07eda18a, type: 2}
   jellyfishComputeShader: {fileID: 7200000, guid: 8513eaabe367941c7808ab8ee0e2be59, type: 3}
   medusaId: 0
 --- !u!4 &407070758
