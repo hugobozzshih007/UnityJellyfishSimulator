@@ -16,6 +16,12 @@ public class Medusa : MonoBehaviour
     public float charge = 0; 
     private float time = 0;
     private float noiseSeed;
+    
+    [Header("Oscillation Settings")]
+    public float frequencyBoost = 3.0f;
+    [Header("Smooth Frequency")]
+    public float currentFreqMultiplier = 1.0f; // 當前頻率倍率
+    public float freqLerpSpeed = 2.0f;       // 頻率變化的平滑速度
 
     [Header("References")]
     public MedusaController controller; 
@@ -82,17 +88,25 @@ public class Medusa : MonoBehaviour
     void Update()
     {
         if (!isReady) return;
-
         float dt = Time.deltaTime;
 
-        // 更新時間與相位
+        // 1. 取得瞬時轉向強度
+        float instantTurn = (controller != null) ? controller.GetTurnFactor() : 0f;
+
+        // 2. ★ 核心修正：將瞬時值平滑化 ★
+        // 如果 instantTurn > 0，代表正在轉，目標倍率提高
+        // 使用 Lerp 讓 currentFreqMultiplier 緩緩爬升或下降
+        float targetMultiplier = 1.0f + (instantTurn * frequencyBoost);
+        currentFreqMultiplier = Mathf.Lerp(currentFreqMultiplier, targetMultiplier, dt * freqLerpSpeed);
+
+        // 3. 更新時間與相位 (使用平滑後的倍率)
         float timeStepNoise = (Mathf.PerlinNoise(noiseSeed, Time.time * 0.1f) - 0.5f) * 2.0f;
-        time += dt * (1.0f + timeStepNoise * 0.1f + charge * 0.5f);
+    
+        // phase 的增長速度現在由 currentFreqMultiplier 決定 
+        time += dt * currentFreqMultiplier * (1.0f + timeStepNoise * 0.1f + charge * 0.5f);
         phase = ((time * 0.2f) % 1.0f) * Mathf.PI * 2.0f;
 
-        // 由控制器處理追蹤與位移
         if (controller != null) controller.UpdateMovement(dt);
-
         UpdateShaderParams();
         if (physics != null) physics.Update(dt);
     }
@@ -119,6 +133,11 @@ public class Medusa : MonoBehaviour
     void UpdateShaderParams()
     {
         if (physics == null || physics.vertexBuffer == null) return;
+        // [新增] 計算擺動振幅縮減：當頻率加成越高，振幅越小
+        // 取得目前轉向因子
+        //float turnFactor = (controller != null) ? controller.GetTurnFactor() : 0f;
+        // 1.0 是正常張開，0.5 代表張開角度減半 (數值可依手感調整)
+        //float amplitudeScale = Mathf.Lerp(1.0f, 0.6f, turnFactor);
         Material[] mats = { jellyfishMaterial, jellyfishMaterialInside };
         foreach (var mat in mats) {
             if (mat != null) {

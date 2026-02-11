@@ -60,6 +60,7 @@ Material:
     m_Floats:
     - _AlphaClip: 0
     - _AlphaToMask: 0
+    - _AmplitudeScale: 0.6
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BottomFactor: 0
@@ -72,7 +73,7 @@ Material:
     - _Cull: 2
     - _DstBlend: 10
     - _DstBlendAlpha: 10
-    - _Phase: 1.6176742
+    - _Phase: 0.5070631
     - _QueueControl: 1
     - _QueueOffset: 0
     - _ReceiveShadows: 1

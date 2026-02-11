@@ -5354,10 +5354,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Medusa
   subdivisions: 32
   moveSpeedMultiplier: 1.5
-  warmUpFrames: 60
+  warmUpFrames: 120
   isReady: 0
   phase: 0
   charge: 0
+  frequencyBoost: 0.35
+  currentFreqMultiplier: 1
+  freqLerpSpeed: 2
   controller: {fileID: 0}
   tentacles: {fileID: 0}
   oralArms: {fileID: 0}
@@ -5412,6 +5415,7 @@ MonoBehaviour:
   sphereRadius: 50
   safeMargin: 15
   eatDistance: 1.5
+  downYLimit: 15
   currentFoodPosition: {x: 0, y: 0, z: 0}
 --- !u!4 &609195934
 Transform:

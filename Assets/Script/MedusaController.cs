@@ -3,6 +3,7 @@ using UnityEngine;
 public class MedusaController : MonoBehaviour
 {
     private Medusa _medusa;
+    private float _currentTurnFactor = 0f; // [新增] 儲存當前轉向強度
     
     [Header("Movement Settings")]
     public float moveSpeedMultiplier = 2.0f;
@@ -10,9 +11,9 @@ public class MedusaController : MonoBehaviour
 
     [Header("Steering & Constraints")]
     public float baseRotationSpeed = 25f;    
-    public float maxSteerAnglePerSecond = 12f; // [新增] 限制每秒最大轉向角度
+    public float maxSteerAnglePerSecond = 12f; 
     [Range(0f, 1f)]
-    public float turnSpeedReduction = 0.2f;    // [新增] 轉向時速度衰減係數 (值越小減速越多)
+    public float turnSpeedReduction = 1f;    
 
     public void Initialize(Medusa medusa)
     {
@@ -20,30 +21,29 @@ public class MedusaController : MonoBehaviour
         this.moveSpeedMultiplier = medusa.moveSpeedMultiplier;
     }
 
+    // [新增] 供 Medusa.cs 讀取轉向強度以影響擺動頻率
+    public float GetTurnFactor() => _currentTurnFactor;
+
     public void UpdateMovement(float dt)
     {
         if (!_medusa.isReady || FoodManager.Instance == null) return;
 
         Vector3 targetPos = FoodManager.Instance.currentFoodPosition;
+        
+        // 此處 phase 已在 Medusa.cs 中根據轉向速度加速更新
         float rawSine = Mathf.Sin(_medusa.phase + 4.4f);
         bool isThrusting = rawSine > 0;
 
         // --- 1. 計算轉向與角度約束 ---
-        float turnFactor = 0f; // 用來記錄轉向的程度，供後續減速使用
-        HandleRestrictedSteering(targetPos, dt, rawSine, isThrusting, out turnFactor);
+        HandleRestrictedSteering(targetPos, dt, rawSine, isThrusting, out _currentTurnFactor);
 
         // --- 2. 計算推進位移 (包含轉向減速) ---
         float adjustedThrust = isThrusting ? Mathf.Pow(rawSine, thrustSharpness) : rawSine * 0.05f;
-        
-        // 基礎速度計算
         float speed = (0.5f + adjustedThrust + _medusa.charge * 1.5f);
         
-        // [新增] 轉向減速邏輯：當轉向角度越大，速度衰減越多
-        // turnFactor 為 0~1，代表當前轉向動作的強度
-        float speedPenalty = Mathf.Lerp(1.0f, turnSpeedReduction, turnFactor);
+        float speedPenalty = Mathf.Lerp(1.0f, turnSpeedReduction, _currentTurnFactor);
         speed *= speedPenalty;
 
-        // 應用位移
         transform.position += transform.up * (speed * dt * moveSpeedMultiplier);
 
         // --- 3. 邊界與邏輯檢查 ---
@@ -54,28 +54,45 @@ public class MedusaController : MonoBehaviour
     private void HandleRestrictedSteering(Vector3 targetPos, float dt, float rawSine, bool isThrusting, out float turnFactor)
     {
         turnFactor = 0f;
-        Vector3 dir = (targetPos - transform.position).normalized;
+        Vector3 toTarget = targetPos - transform.position;
+        Vector3 dir = toTarget.normalized;
         if (dir == Vector3.zero) return;
 
-        // 計算目前方向與目標方向的夾角
-        float angleToTarget = Vector3.Angle(transform.up, dir);
-        if (angleToTarget < 0.1f) return;
+        // --- 1. 偵測並避開垂直向下 (Hack) ---
+        // 當目標過於垂直時，加入水平偏移強迫水母走弧線，避免物理塌陷 
+        if (dir.y < -0.98f) 
+        {
+            Vector3 pushOffset = transform.forward; 
+            pushOffset.y = 0; 
+            if (pushOffset.sqrMagnitude < 0.01f) pushOffset = transform.right;
+            dir = Vector3.Normalize(dir + pushOffset.normalized * 0.5f);
+        }
 
-        // 1. 決定基礎轉向能力 (隨相位改變)
+        // --- 2. 計算剩餘轉向角度 ---
+        float angleToTarget = Vector3.Angle(transform.up, dir);
+
+        // 設定一個閾值（例如 0.5 度），小於此角度視為轉向完成
+        if (angleToTarget < 0.5f) 
+        {
+            _currentTurnFactor = 0f;
+            turnFactor = 0f;
+            return;
+        }
+
+        // --- 3. 執行旋轉運算 ---
         float steerAbility = isThrusting ? (0.2f + rawSine * 0.8f) : 0.1f;
-        
-        // 2. 應用最大角度限制 (24度/秒)
-        // 我們取「設定的轉向速度」與「硬上限」的最小值
         float currentSteerSpeed = Mathf.Min(baseRotationSpeed * steerAbility, maxSteerAnglePerSecond);
 
-        // 3. 執行旋轉
         Quaternion targetRot = Quaternion.FromToRotation(Vector3.up, dir);
-        Quaternion nextRot = Quaternion.RotateTowards(transform.rotation, targetRot, currentSteerSpeed * dt);
-        
-        // 計算這一幀實際轉動了幾度，用來輸出 turnFactor
-        float actualFrameAngle = Quaternion.Angle(transform.rotation, nextRot);
-        turnFactor = Mathf.Clamp01(actualFrameAngle / (maxSteerAnglePerSecond * dt));
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, currentSteerSpeed * dt);
 
-        transform.rotation = nextRot;
+        // --- 4. 關鍵修改：穩定輸出 turnFactor ---
+        // 我們改用「剩餘角度」除以一個參考值（例如 45 度）來計算強度
+        // 這樣在整個轉彎過程中，turnFactor 會平滑且持續地存在，直到對準目標為止
+        // 基礎邏輯參考自：
+        turnFactor = Mathf.Clamp01(angleToTarget / 45f); 
+    
+        // 更新類別成員變數，確保 Medusa.cs 讀取到的是持續的加速狀態
+        _currentTurnFactor = turnFactor; 
     }
 }

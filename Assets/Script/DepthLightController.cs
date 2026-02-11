@@ -43,11 +43,11 @@ public class DepthLightController : MonoBehaviour
         // 這樣只要有一方過低，Caustic 就會消失；反之則能維持較佳亮度
         float outerlWeight = Mathf.Min(t_depth, t_angle);
         float outerIntensity = Mathf.Lerp(minCaustic, maxCaustic, outerlWeight);
-        Debug.LogWarning("intensity: "+ outerIntensity.ToString());
+        //Debug.LogWarning("intensity: "+ outerIntensity.ToString());
         float rT_angle = 1.0f - t_angle; 
         float innerlWeight = Mathf.Min(t_depth, rT_angle);
         float innerIntensity = Mathf.Lerp(minCaustic, maxCaustic, innerlWeight);
-        Debug.LogWarning("intensity: "+ innerIntensity.ToString());
+        //Debug.LogWarning("intensity: "+ innerIntensity.ToString());
         // 4. 全域套用
         if(outerBell != null)
             outerBell.SetFloat(globalCausticName, outerIntensity);
