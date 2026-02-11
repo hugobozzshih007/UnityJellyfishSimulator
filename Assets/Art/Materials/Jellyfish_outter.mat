@@ -72,7 +72,7 @@ Material:
     - _Cull: 2
     - _DstBlend: 10
     - _DstBlendAlpha: 10
-    - _Phase: 5.575355
+    - _Phase: 1.6176742
     - _QueueControl: 1
     - _QueueOffset: 0
     - _ReceiveShadows: 1
