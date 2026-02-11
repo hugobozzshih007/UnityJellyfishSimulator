@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 257001009}
   - component: {fileID: 257001012}
   m_Layer: 0
-  m_Name: Directional Light_nocookie
+  m_Name: Directional Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5358,7 +5358,7 @@ MonoBehaviour:
   isReady: 0
   phase: 0
   charge: 0
-  frequencyBoost: 0.35
+  frequencyBoost: 0.42
   currentFreqMultiplier: 1
   freqLerpSpeed: 2
   controller: {fileID: 0}
