@@ -9,12 +9,12 @@ public class MedusaOralArms : MonoBehaviour
     [Header("Physics Settings")]
     [Range(0.1f, 1.0f)]
     //拉伸剛性
-    public float stretchStiffness = 0.01f; 
+    public float stretchStiffness = 0.1f; 
 
     //基礎彎曲剛性
     public float baseBendStiffness = 0.1f; 
     //末端彎曲剛性
-    public float tipBendStiffness = 0.05f;
+    public float tipBendStiffness = 0.1f;
     
     [Header("Ruffle Growth")]
     [Range(0f, 1f)] public float ruffleStartPct = 0.0f;
@@ -85,7 +85,7 @@ public class MedusaOralArms : MonoBehaviour
         // =================================================================================
         for (int i = 0; i < armsNum; i++)
         {
-            float lengthScale = Random.Range(0.75f, 1.5f);
+            float lengthScale = Random.Range(0.75f, 2.0f);
             float currentArmLength = armLength * lengthScale;
             float currentNodeSpacing = currentArmLength / (float)physicsNodes;
 

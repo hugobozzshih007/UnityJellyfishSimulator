@@ -48,8 +48,8 @@ public class MedusaTentacles : MonoBehaviour
         int bellMarginWidth = bell.margin.bellMarginWidth;
 
         int tentacleNum = 20;
-        int tentacleLength = 20;
-        float springStrength = 0.005f; 
+        int tentacleLength = 30;
+        float springStrength = 0.1f; 
 
         List<List<int>> tentaclesPhysicsIds = new List<List<int>>();
 
