@@ -8,10 +8,13 @@ public class MedusaOralArms : MonoBehaviour
     
     [Header("Physics Settings")]
     [Range(0.1f, 1.0f)]
-    public float stretchStiffness = 0.1f; 
+    //拉伸剛性
+    public float stretchStiffness = 0.01f; 
 
+    //基礎彎曲剛性
     public float baseBendStiffness = 0.1f; 
-    public float tipBendStiffness = 0.005f;
+    //末端彎曲剛性
+    public float tipBendStiffness = 0.05f;
     
     [Header("Ruffle Growth")]
     [Range(0f, 1f)] public float ruffleStartPct = 0.0f;
