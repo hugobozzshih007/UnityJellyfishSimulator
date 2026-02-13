@@ -26,7 +26,7 @@ public class VerletPhysics
 {
     // ★★★ 1. 新增：全域水流參數 ★★★
     [Header("Global Water Physics")]
-    public float waterDrag = 0.998f;
+    public float waterDrag = 0.9966f;
     public Vector3 waterCurrent = new Vector3(0.5f, 0f, 0.2f); // 恆定水流方向
     public float turbulenceStrength = 0f; // 亂流強度 (建議從小開始調)
     public float turbulenceFreq = 0f;     // 亂流頻率 (空間密度)
@@ -113,27 +113,11 @@ public class VerletPhysics
 
     public int AddSpring(int v0Id, int v1Id, float stiffness, float restLengthFactor = 1.0f)
     {
-        // 1. 取得兩個頂點的「當前位置」
-        // 注意：這裡假設你的 vertices 列表裡存有位置資訊 (position)
-        Vector3 pos0 = vertices[v0Id].position; 
-        Vector3 pos1 = vertices[v1Id].position;
-        // 2. 計算實際距離
-        float currentDistance = Vector3.Distance(pos0, pos1);
-
-        // 3. 計算真正的物理原長 (RestLength)
-        // 如果傳入 1.0，原長就會等於當前距離 (Ratio = 1.0, 綠色)
-        float calculatedRestLength = currentDistance * restLengthFactor;
-        
         int id = springs.Count;
-        
-        // 5. 存入 Spring 列表
-        SpringData spring = new SpringData();
-        spring.indexA = v0Id;
-        spring.indexB = v1Id;
-        spring.stiffness = stiffness;
-        spring.restLength = calculatedRestLength; // ★ 存入計算後的正確長度
-
-        springs.Add(spring);
+        springs.Add(new SpringData
+        {
+            indexA = v0Id, indexB = v1Id, stiffness = stiffness, restLength = restLengthFactor 
+        });
         vertexSpringConnections[v0Id].Add(id);
         vertexSpringSigns[v0Id].Add(1);
         vertexSpringConnections[v1Id].Add(id);
