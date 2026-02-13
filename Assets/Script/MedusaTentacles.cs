@@ -48,7 +48,7 @@ public class MedusaTentacles : MonoBehaviour
         int bellMarginWidth = bell.margin.bellMarginWidth;
 
         int tentacleNum = 20;
-        int tentacleLength = 30;
+        int tentacleLength = 20;
         float springStrength = 0.1f; 
 
         List<List<int>> tentaclesPhysicsIds = new List<List<int>>();
@@ -111,7 +111,7 @@ public class MedusaTentacles : MonoBehaviour
         List<int> triangles = new List<int>();
 
         int tentacleRadialSegments = 6;
-        float tentacleRadius = 0.015f;
+        float tentacleRadius = 0.012f;
 
         for (int i = 0; i < tentacleNum; i++)
         {

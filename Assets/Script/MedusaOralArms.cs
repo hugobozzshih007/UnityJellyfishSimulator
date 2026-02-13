@@ -9,12 +9,12 @@ public class MedusaOralArms : MonoBehaviour
     [Header("Physics Settings")]
     [Range(0.1f, 1.0f)]
     //拉伸剛性
-    public float stretchStiffness = 0.1f; 
+    public float stretchStiffness = 0.005f; 
 
     //基礎彎曲剛性
-    public float baseBendStiffness = 0.1f; 
+    public float baseBendStiffness = 0.005f; 
     //末端彎曲剛性
-    public float tipBendStiffness = 0.1f;
+    public float tipBendStiffness = 0.005f;
     
     [Header("Ruffle Growth")]
     [Range(0f, 1f)] public float ruffleStartPct = 0.0f;
@@ -32,7 +32,7 @@ public class MedusaOralArms : MonoBehaviour
     public float tubeThinScale = 0.05f;
 
     [Header("Twist Settings")]
-    public float totalTwist = 360.0f;
+    public float totalTwist = 0f;
     
     private Medusa medusa;
     private Mesh mesh;
@@ -105,6 +105,15 @@ public class MedusaOralArms : MonoBehaviour
                 float bendingStiffness = Mathf.Lerp(tipBendStiffness, baseBendStiffness, 1.0f - t);
                 if (p > 0) physics.AddSpring(id, currentArmIds[p-1], stretchStiffness, 1.0f);
                 if (p > 1) physics.AddSpring(id, currentArmIds[p-2], bendingStiffness, 1.0f);
+                if (p > 5 && (p - 3) % 5 == 0)
+                {
+                    // 長度係數設為 0.3 ~ 0.5 (代表這根彈簧想縮到很短)
+                    // 這會給予口腕一種「捲縮」的力道，消除呆呆的直線感
+                    float lengthFactor = Random.Range(0.3f, 0.5f);
+    
+                    // 剛性可以使用較小的值，但它對形狀的貢獻很大
+                    physics.AddSpring(id, currentArmIds[p - 5], stretchStiffness * 0.2f, lengthFactor);
+                }
 
                 currentOffset.y -= currentNodeSpacing;
             }
