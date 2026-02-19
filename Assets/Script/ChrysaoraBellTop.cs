@@ -1,23 +1,34 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 對應 src/medusaBellTop.js
-public class MedusaBellTop
+/// <summary>
+// /// 紫紋海刺型鐘體頂部實作 (繼承自 MedusaBellTopBase)
+// /// </summary>
+public class ChrysaoraBellTop : MedusaBellTopBase
 {
-    private Medusa _medusa;
+    // 儲存頂點行資訊，供 Margin 查找連接點
+    private List<List<MedusaBellGeometry.VertexInfo>> _vertexRows = new List<List<MedusaBellGeometry.VertexInfo>>();
     
-    // 公開 vertexRows，因為其他組件 (如 Margin) 需要存取邊緣頂點
-    public List<List<MedusaBellGeometry.VertexInfo>> vertexRows = new List<List<MedusaBellGeometry.VertexInfo>>();
-
-    public MedusaBellTop(Medusa medusa)
+    /// <summary>
+    /// 提供給其他組件 (如 Margin) 存取邊緣頂點的接口
+    /// </summary>
+    public override List<List<MedusaBellGeometry.VertexInfo>> GetVertexRows() => _vertexRows;
+    
+    /// <summary>
+    /// 初始化模組，由 Medusa.cs 統一呼叫
+    /// </summary>
+    public override void Initialize(Medusa medusa)
     {
-        _medusa = medusa;
+        this.owner = medusa;
+        
+        // 執行幾何生成
+        CreateGeometry();
     }
 
     public void CreateGeometry()
     {
-        int subdivisions = _medusa.subdivisions;
-        MedusaBellGeometry geometry = _medusa.bell.geometryOutside;
+        int subdivisions = owner.config.subdivisions;
+        MedusaBellGeometry geometry = owner.geometryOutside;
 
         // ---------------------------------------------------------
         // 1. 定義二十面體 (Icosahedron) 基礎參數
@@ -45,10 +56,7 @@ public class MedusaBellTop
         // ---------------------------------------------------------
         MedusaBellGeometry.VertexInfo AddVertex(Vector3 position)
         {
-            // [JS 原作邏輯]
-            // const width = Math.sqrt(position.x*position.x+position.z*position.z);
             float width = Mathf.Sqrt(position.x * position.x + position.z * position.z);
-            
             // [關鍵修正] Zenith 必須是歸一化的弧度 (0~1)
             // atan2(width, y) 算出從頂點向下的角度 (0 ~ PI/2)
             // 除以 (PI * 0.5) 將其映射到 0~1，這直接決定了 UV0 的半徑
@@ -60,9 +68,9 @@ public class MedusaBellTop
             return geometry.AddVertexFromParams(zenith, azimuth);
         }
 
-        vertexRows.Clear();
+        _vertexRows.Clear();
         // JS 中的 vertexRows[0] 是空的，我們保持一致以對齊索引
-        vertexRows.Add(new List<MedusaBellGeometry.VertexInfo>());
+        _vertexRows.Add(new List<MedusaBellGeometry.VertexInfo>());
 
         // ---------------------------------------------------------
         // 2. 生成頂點 (Vertices)
@@ -90,7 +98,7 @@ public class MedusaBellTop
             // 閉合圓周 (複製開頭的點以處理接縫)
             vertexRow.Add(vertexRow[0]);
             vertexRow.Add(vertexRow[1]);
-            vertexRows.Add(vertexRow);
+            _vertexRows.Add(vertexRow);
         }
 
         // --- Part B: 下半部延伸/裙邊 (y=1 to subdivisions/2) ---
@@ -126,7 +134,7 @@ public class MedusaBellTop
             }
             vertexRow.Add(vertexRow[0]);
             vertexRow.Add(vertexRow[1]);
-            vertexRows.Add(vertexRow);
+            _vertexRows.Add(vertexRow);
         }
 
         // ---------------------------------------------------------
@@ -136,7 +144,7 @@ public class MedusaBellTop
         // 輔助函數：從 vertexRows 獲取正確的 Vertex ID
         int GetVertexPtr(int row, int index) 
         {
-            return vertexRows[row][index].ptr;
+            return _vertexRows[row][index].ptr;
         }
 
         // 對應 JS: getVertexFromTopFace
@@ -159,9 +167,9 @@ public class MedusaBellTop
 
         // --- 處理頂端接縫 (Row 1) ---
         // JS 原作這裡手動縫合了第一圈
-        if (vertexRows.Count > 1)
+        if (_vertexRows.Count > 1)
         {
-            var row1 = vertexRows[1];
+            var row1 = _vertexRows[1];
             // 注意：JS 原碼只縫合了前三個面? 這裡照抄邏輯
             // 但為了保險，通常我們會希望縫合完整。
             // 這裡還原 JS 顯式寫出的部分：
@@ -230,5 +238,10 @@ public class MedusaBellTop
                 }
             }
         }
+    }
+    
+    public override void UpdateModule(float dt)
+    {
+        // 鐘體頂部材質參數由 Medusa.cs 統一更新
     }
 }

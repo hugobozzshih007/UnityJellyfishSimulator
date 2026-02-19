@@ -5353,22 +5353,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90b1112bf95a6413c90ac73e998ef335, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Medusa
-  subdivisions: 32
-  moveSpeedMultiplier: 1.5
-  warmUpFrames: 120
+  config: {fileID: 11400000, guid: 0e12790295ea745c2bcef3715e7c89b3, type: 2}
+  jellyfishComputeShader: {fileID: 7200000, guid: 8513eaabe367941c7808ab8ee0e2be59, type: 3}
+  controller: {fileID: 0}
+  bellTop: {fileID: 0}
+  bellBottom: {fileID: 0}
+  bellMargin: {fileID: 0}
+  oralArms: {fileID: 0}
+  tentacles: {fileID: 0}
   isReady: 0
   phase: 0
   charge: 0
-  frequencyBoost: 0.5
-  currentFreqMultiplier: 1
-  freqLerpSpeed: 2
-  controller: {fileID: 0}
-  tentacles: {fileID: 0}
-  oralArms: {fileID: 0}
-  jellyfishMaterial: {fileID: 2100000, guid: 48a4780308b64464fa94faf9d26078d7, type: 2}
-  jellyfishMaterialInside: {fileID: 2100000, guid: e744df7e3685a426694b36c9b1141278, type: 2}
-  oralArmMaterial: {fileID: 2100000, guid: 59c07e92637a84561aa3a27c07eda18a, type: 2}
-  jellyfishComputeShader: {fileID: 7200000, guid: 8513eaabe367941c7808ab8ee0e2be59, type: 3}
+  warmUpFrames: 120
   medusaId: 0
 --- !u!4 &407070758
 Transform:

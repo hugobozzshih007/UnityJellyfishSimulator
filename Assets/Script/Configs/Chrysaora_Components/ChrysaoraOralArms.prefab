@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &867959501490498913
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 389321787005903680}
+  - component: {fileID: 1256874815711271062}
+  m_Layer: 0
+  m_Name: ChrysaoraOralArms
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &389321787005903680
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867959501490498913}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1256874815711271062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867959501490498913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1ab277c129e4426d8388f9a19089cc0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChrysaoraOralArms
+  randomSeed: 0
+  stretchStiffness: 0.005
+  baseBendStiffness: 0.005
+  tipBendStiffness: 0.005
+  armLength: 8
+  physicsNodes: 50
+  attachmentZenith: 0.2
+  rootDistributionRadius: 0.4
+  ruffleWidth: 2.2
+  ruffleFoldAmt: 2.5
+  noiseFreq: 0.65
+  rufflePeakPos: 0.25
+  rootRuffleScale: 0.01
+  ruffleEndPct: 0.95
+  tubeThickness: 0.1
+  swellStart: 0.1
+  swellPeak: 0.25
+  swellAmount: 1.5
+  tubeThinStart: 0.4
+  tubeThinScale: 0.05
+  visualSegmentsPerNode: 6
+  totalTwist: 0

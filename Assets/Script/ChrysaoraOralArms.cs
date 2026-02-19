@@ -1,74 +1,78 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class MedusaOralArms : MonoBehaviour
+/// <summary>
+/// 紫紋海刺型口腕實作 (繼承自 MedusaOralArmsBase)
+/// </summary>
+public class ChrysaoraOralArms : MedusaOralArmsBase
 {
     [Header("Randomness")]
     public int randomSeed = 0;
     
     [Header("Physics Settings")]
-    [Range(0.1f, 1.0f)]
+    [Range(0.001f, 1.0f)]
     //拉伸剛性
     public float stretchStiffness = 0.005f; 
-
     //基礎彎曲剛性
     public float baseBendStiffness = 0.005f; 
     //末端彎曲剛性
     public float tipBendStiffness = 0.005f;
     
-    [Header("Ruffle Growth")]
-    [Range(0f, 1f)] public float ruffleStartPct = 0.0f;
-    [Range(0f, 1f)] public float ruffleEndPct = 0.95f;
+    [Header("Structure Settings")]
+    public float armLength = 8.0f; 
+    public int physicsNodes = 50;
+    [Range(0f, 1f)] public float attachmentZenith = 0.2f; 
+    public float rootDistributionRadius = 0.4f;
     
-    [Header("Shape Profiling")]
+    [Header("Ruffle Shape")]
+    public float ruffleWidth = 2.2f;  
+    public float ruffleFoldAmt = 2.5f;  
+    public float noiseFreq = .65f;
     [Range(0.1f, 0.9f)] public float rufflePeakPos = 0.25f;
     [Range(0f, 1f)] public float rootRuffleScale = 0.01f; 
+    [Range(0f, 1f)] public float ruffleEndPct = 0.95f;
     
-    [Header("Tube Swelling (New)")]
+    [Header("Tube Appearance")]
+    public float tubeThickness = 0.1f;
     public float swellStart = 0.1f;    // 開始變粗
     public float swellPeak = 0.25f;     // 最粗位置
     public float swellAmount = 1.5f;   // 膨脹倍率 (2倍)
     public float tubeThinStart = 0.4f; // 開始變極細的位置 (需大於 swellPeak)
     public float tubeThinScale = 0.05f;
-
+    
+    [Header("Mesh Density")]
+    public int visualSegmentsPerNode = 6; 
+    
     [Header("Twist Settings")]
     public float totalTwist = 0f;
     
-    private Medusa medusa;
     private Mesh mesh;
     private MeshRenderer meshRenderer;
     private MaterialPropertyBlock propBlock;
-
-    [Header("Structure Settings")]
-    public float armLength = 8.0f; 
-    public int physicsNodes = 50; 
-    [Range(0f, 1f)] public float attachmentZenith = 0.2f; 
-    public float rootDistributionRadius = 0.4f;
-
-    [Header("Tube Appearance")]
-    public float tubeThickness = 0.1f; 
-
-    [Header("Mesh Density")]
-    public int visualSegmentsPerNode = 6; 
     
     const int armsNum = 4;        
     const int finsPerArm = 6;     
 
-    [Header("Ruffle Shape")]
-    public float ruffleWidth = 2.2f;  
-    public float ruffleFoldAmt = 2.5f;  
-    public float noiseFreq = .65f;      
+        
 
-    public void Initialize(Medusa medusa, Material material)
+    /// <summary>
+    /// 初始化模組，由 Medusa.cs 統一呼叫
+    /// </summary>
+    public override void Initialize(Medusa medusa)
     {
-        this.medusa = medusa;
-        CreateGeometry(material);
+        this.owner = medusa;
+        propBlock = new MaterialPropertyBlock();
+
+        // 依照你的偏好，從 Config 拿取口腕專用材質
+        Material targetMat = owner.config.oralArmsMaterial;
+
+        CreateGeometry(targetMat);
     }
 
     void CreateGeometry(Material material = null)
     {
-        VerletPhysics physics = medusa.physics;
-        MedusaVerletBridge bridge = medusa.bridge;
+        VerletPhysics physics = owner.physics;
+        MedusaVerletBridge bridge = owner.bridge;
         
         List<Vector3> vertices = new List<Vector3>();
         List<Vector3> normals = new List<Vector3>(); 
@@ -97,10 +101,10 @@ public class MedusaOralArms : MonoBehaviour
             {
                 bool isFixed = (p == 0);
                 float t = p / (float)physicsNodes; 
-                int id = physics.AddVertex(medusa.transform.position, isFixed, t);
+                int id = physics.AddVertex(owner.transform.position, isFixed, t);
                 currentArmIds.Add(id);
 
-                bridge.RegisterVertex(medusa.medusaId, id, attachmentZenith, azimuth, true, currentOffset, 0f, isFixed);
+                bridge.RegisterVertex(owner.medusaId, id, attachmentZenith, azimuth, true, currentOffset, 0f, isFixed);
 
                 float bendingStiffness = Mathf.Lerp(tipBendStiffness, baseBendStiffness, 1.0f - t);
                 if (p > 0) physics.AddSpring(id, currentArmIds[p-1], stretchStiffness, 1.0f);
@@ -219,6 +223,7 @@ public class MedusaOralArms : MonoBehaviour
         }
         
         mesh = new Mesh();
+        mesh.name = "Chrysaora_OralArms_Mesh";
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; 
         mesh.vertices = vertices.ToArray();
         mesh.normals = normals.ToArray();
@@ -228,7 +233,7 @@ public class MedusaOralArms : MonoBehaviour
 
         if (meshRenderer == null) {
             GameObject obj = new GameObject("OralArms_Skinned");
-            obj.transform.SetParent(medusa.transform, false);
+            obj.transform.SetParent(owner.transform, false);
             meshRenderer = obj.AddComponent<MeshRenderer>();
             obj.AddComponent<MeshFilter>().mesh = mesh;
         }
@@ -253,13 +258,16 @@ public class MedusaOralArms : MonoBehaviour
         v.x = x; v.z = z;
     }
     
-    void Update()
+    /// <summary>
+    /// 更新材質參數，由 Medusa.cs 驅動
+    /// </summary>
+    public override void UpdateModule(float dt)
     {
-        if (meshRenderer != null && medusa.physics != null && medusa.physics.vertexBuffer != null)
+        if (meshRenderer != null && owner.physics != null && owner.physics.vertexBuffer != null)
         {
             meshRenderer.GetPropertyBlock(propBlock);
-            propBlock.SetBuffer("_PhysicsBuffer", medusa.physics.vertexBuffer);
-            propBlock.SetFloat("_Charge", medusa.charge);
+            propBlock.SetBuffer("_PhysicsBuffer", owner.physics.vertexBuffer);
+            propBlock.SetFloat("_Charge", owner.charge);
             meshRenderer.SetPropertyBlock(propBlock);
         }
     }

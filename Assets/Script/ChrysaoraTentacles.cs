@@ -2,11 +2,26 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Runtime.InteropServices;
 
-public class MedusaTentacles : MonoBehaviour
+/// <summary>
+/// 紫紋海刺型觸手實作 (繼承自 MedusaTentaclesBase)
+/// </summary>
+public class ChrysaoraTentacles : MedusaTentaclesBase
 {
-    private Medusa _medusa;
+    [Header("Tentacle Settings")]
+    public int tentacleNum = 20;
+    public int tentacleLength = 20;
+    public float tentacleRadius = 0.012f;
+    public int tentacleRadialSegments = 6;
+    
+    [Header("Physics Settings")]
+    public float springStrength = 0.1f;
+    public float segmentLengthMin = 0.24f;
+    public float segmentLengthMax = 0.30f;
+    
     private Mesh _mesh;
     private Material _material;
+    private MeshRenderer _meshRenderer;
+    private MaterialPropertyBlock _propBlock;
 
     // 定義與 C# 交互的 Vertex 結構
    [StructLayout(LayoutKind.Sequential)]
@@ -18,38 +33,37 @@ public class MedusaTentacles : MonoBehaviour
         public float uvY;
     }
 
-    public void Initialize(Medusa medusa)
+    /// <summary>
+    /// 初始化模組，由 Medusa.cs 統一呼叫
+    /// </summary>
+    public override void Initialize(Medusa medusa)
     {
-        _medusa = medusa;
-        CreatePhysicsAndGeometry();
-    }
+        this.owner = medusa;
 
-    // 輔助函式：從 Bridge 中查找特定頂點的數據
-    private MedusaVerletBridge.BridgeData FindBridgeData(int vertexId)
-    {
-        foreach (var data in _medusa.bridge.bridgeVertices)
+        // 安全檢查：觸手依賴裙邊 (Margin) 的物理結點作為根部
+        if (owner.bellMargin == null)
         {
-            if (data.vertexId == vertexId) return data;
+            Debug.LogError("ChrysaoraTentacles: 找不到 BellMargin！請確認 Medusa.cs 中的生成順序。");
+            return;
         }
-        Debug.LogError($"找不到 ID {vertexId} 的 BridgeData！");
-        return new MedusaVerletBridge.BridgeData();
+
+        _material = owner.config.tentaclesMaterial;
+        _propBlock = new MaterialPropertyBlock();
+        CreateGeometry();
     }
 
-    private void CreatePhysicsAndGeometry()
+    private void CreateGeometry()
     {
-        var bell = _medusa.bell;
-        var physics = _medusa.physics;
-        var bridge = _medusa.bridge;
-        var medusaId = _medusa.medusaId;
-
-        if (bell.margin.bellMarginRows == null || bell.margin.bellMarginRows.Count == 0) return;
-
-        var bellMarginRows = bell.margin.bellMarginRows;
-        int bellMarginWidth = bell.margin.bellMarginWidth;
-
-        int tentacleNum = 20;
-        int tentacleLength = 20;
-        float springStrength = 0.1f; 
+        //var bell = owner.bell;
+        var physics = owner.physics;
+        var bridge = owner.bridge;
+        var medusaId = owner.medusaId;
+        
+        // 透過具名變數直接從裙邊組件抓取數據接口
+        var bellMarginRows = owner.bellMargin.GetMarginRows();
+        int bellMarginWidth = owner.bellMargin.GetMarginWidth();
+        
+        if (bellMarginRows == null || bellMarginRows.Count == 0) return;
 
         List<List<int>> tentaclesPhysicsIds = new List<List<int>>();
 
@@ -69,7 +83,6 @@ public class MedusaTentacles : MonoBehaviour
 
             // 獲取 Pivot 的 BridgeData 以繼承座標系
             var pivotData = FindBridgeData(pivotId);
-            
             float zenith = pivotData.zenith;
             float azimuth = pivotData.azimuth;
             Vector3 currentOffset = pivotData.offset; 
@@ -107,12 +120,8 @@ public class MedusaTentacles : MonoBehaviour
         List<Vector2> uv0 = new List<Vector2>(); // x:Angle, y:Progress (用於漸層)
         List<Vector2> uv1 = new List<Vector2>(); // ID_A, ID_B
         List<Vector2> uv2 = new List<Vector2>(); // ★ 新增: x:Width (寬度搬到這裡)
-        
         List<int> triangles = new List<int>();
-
-        int tentacleRadialSegments = 6;
-        float tentacleRadius = 0.012f;
-
+        
         for (int i = 0; i < tentacleNum; i++)
         {
             List<List<int>> tentacleMeshRowIndices = new List<List<int>>();
@@ -133,17 +142,12 @@ public class MedusaTentacles : MonoBehaviour
                     
                     // 計算寬度
                     float width = (y == 1) ? 0f : Mathf.Sqrt(1.0f - progress) * tentacleRadius;
-
                     vertices.Add(Vector3.zero); 
-                    
                     // ★ UV0.y 現在存的是 progress
                     uv0.Add(new Vector2(angle, progress));
-                    
                     uv1.Add(new Vector2(idA, idB));
-                    
                     // ★ UV2.x 存 width
                     uv2.Add(new Vector2(width, 0));
-
                     row.Add(vertices.Count - 1);
                 }
                 tentacleMeshRowIndices.Add(row);
@@ -165,7 +169,6 @@ public class MedusaTentacles : MonoBehaviour
                     triangles.Add(v2); 
                     triangles.Add(v1); 
                     triangles.Add(v0);
-
                     triangles.Add(v1); 
                     triangles.Add(v2); 
                     triangles.Add(v3);
@@ -174,6 +177,7 @@ public class MedusaTentacles : MonoBehaviour
         }
 
         _mesh = new Mesh();
+        _mesh.name = "Chrysaora_Tentacles_Mesh";
         _mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         _mesh.SetVertices(vertices);
         _mesh.SetUVs(0, uv0);
@@ -185,29 +189,45 @@ public class MedusaTentacles : MonoBehaviour
 
         var shader = Shader.Find("Shader Graphs/Tentacles");
         
-        if (shader != null)
-            _material = new Material(shader);
-        else
-            _material = new Material(Shader.Find("Standard"));
-
-        GameObject obj = new GameObject("Tentacles");
-        obj.transform.SetParent(_medusa.transform, false);
-        obj.AddComponent<MeshFilter>().mesh = _mesh;
-        var renderer = obj.AddComponent<MeshRenderer>();
-        renderer.material = _material;
+        if (_material == null)
+        {
+            if (shader != null)
+                _material = new Material(shader);
+            else
+                _material = new Material(Shader.Find("Standard"));
+        }
+        GameObject visualObj = new GameObject("Tentacle_Visual");
+        visualObj.transform.SetParent(this.transform, false);
+        visualObj.AddComponent<MeshFilter>().mesh = _mesh;
+        _meshRenderer = visualObj.AddComponent<MeshRenderer>();
+        _meshRenderer.material = _material;
     }
 
-    void Update()
+    /// <summary>
+    /// 更新材質參數，由 Medusa.cs 的 Update 驅動
+    /// </summary>
+    public override void UpdateModule(float dt)
     {
-        if (_material != null && _medusa.physics.vertexBuffer != null)
+        if (_meshRenderer != null && owner.physics.vertexBuffer != null)
         {
-            _material.SetBuffer("_VertexData", _medusa.physics.vertexBuffer);
-
-            // ★ 新增：傳遞 Charge 讓觸手發光
-            if (_medusa != null)
-            {
-                _material.SetFloat("_Charge", _medusa.charge);
-            }
+            _meshRenderer.GetPropertyBlock(_propBlock);
+            
+            // 傳遞 Compute Shader 物理緩衝區與 Charge (發光) 參數
+            _propBlock.SetBuffer("_VertexData", owner.physics.vertexBuffer);
+            _propBlock.SetFloat("_Charge", owner.charge);
+            
+            _meshRenderer.SetPropertyBlock(_propBlock);
         }
+    }
+    
+    // 輔助函式：從 Bridge 中查找特定頂點的數據
+    private MedusaVerletBridge.BridgeData FindBridgeData(int vertexId)
+    {
+        foreach (var data in owner.bridge.bridgeVertices)
+        {
+            if (data.vertexId == vertexId) return data;
+        }
+        Debug.LogError($"找不到 ID {vertexId} 的 BridgeData！");
+        return new MedusaVerletBridge.BridgeData();
     }
 }

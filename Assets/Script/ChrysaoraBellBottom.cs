@@ -1,22 +1,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 對應 src/medusaBellBottom.js
-public class MedusaBellBottom
+//// <summary>
+// /// 標準水母鐘體內殼實作 (繼承自 MedusaBellBottomBase)
+// /// </summary>
+public class ChrysaoraBellBottom : MedusaBellBottomBase
 {
-    private Medusa _medusa;
 
-    public MedusaBellBottom(Medusa medusa)
+    /// <summary>
+    /// 初始化模組，由 Medusa.cs 統一呼叫
+    /// </summary>
+    public override void Initialize(Medusa medusa)
     {
-        _medusa = medusa;
+        this.owner = medusa;
+        
+        // 內殼與外殼共享相同的細分參數，確保頂點一一對應
+        CreateGeometry();
     }
 
     public void CreateGeometry()
     {
-        int subdivisions = _medusa.subdivisions;
+        int subdivisions = owner.config.subdivisions;
         
         // ★ 重點 1: 使用 geometryInside (內殼)
-        MedusaBellGeometry geometry = _medusa.bell.geometryInside; 
+        // ★ 關鍵：使用 owner 提供的內殼幾何容器
+        MedusaBellGeometry geometry = owner.geometryInside;
 
         // --- Icosahedron 數學常數 (與 Top 相同) ---
         float icoCircumradius = 0.951057f;
@@ -173,5 +181,13 @@ public class MedusaBellBottom
                 }
             }
         }
+    }
+    
+    /// <summary>
+    /// 由 Medusa.cs 驅動的更新
+    /// </summary>
+    public override void UpdateModule(float dt)
+    {
+        // 內殼通常不包含獨立的 Update 邏輯，材質參數由 Medusa.cs 統一更新
     }
 }

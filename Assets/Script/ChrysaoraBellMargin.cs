@@ -1,46 +1,73 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MedusaBellMargin
+/// <summary>
+/// 紫紋海刺型裙邊實作
+/// </summary>
+public class ChrysaoraBellMargin : MedusaBellMarginBase
 {
-    private Medusa _medusa;
     
-    public List<List<int>> bellMarginRows = new List<List<int>>();
-    public int bellMarginWidth;
-
-    public MedusaBellMargin(Medusa medusa)
+    [Header("Margin Settings")]
+    public int bellMarginHeight = 4;
+    public float marginDepth = 0.025f;
+    public float offsetMultiplier = 0.7f;
+    public float offsetSpacing = 0.06f;
+    
+    [Header("Physics Strengths")]
+    public float structuralStrength = 0.02f;
+    public float shearStrength = 0.002f;
+    public float springRestLength = 1f;
+    
+    // 儲存物理點 ID 供觸手 (Tentacles) 引用
+    private List<List<int>> _bellMarginRows = new List<List<int>>();
+    // 實作基底類別要求的接口
+    public override List<List<int>> GetMarginRows() => _bellMarginRows;
+    public override int GetMarginWidth() => _bellMarginWidth;
+    
+    
+    private int _bellMarginWidth;
+    
+    /// <summary>
+    /// 初始化模組，由 Medusa.cs 統一呼叫
+    /// </summary>
+    public override void Initialize(Medusa medusa)
     {
-        _medusa = medusa;
-    }
+        this.owner = medusa;
 
+        // 安全檢查：Margin 依賴於 BellTop 的幾何數據
+        if (owner.bellTop == null)
+        {
+            Debug.LogError("ChrysaoraBellMargin: 找不到 BellTop！請確認 Medusa.cs 中的生成順序。");
+            return;
+        }
+        Material targetMat = owner.config.oralArmsMaterial;
+        // 執行幾何與物理生成
+        CreateGeometry();
+    }
     public void CreateGeometry()
     {
-        int subdivisions = _medusa.subdivisions;
-        VerletPhysics physics = _medusa.physics;
-        MedusaVerletBridge bridge = _medusa.bridge;
-        int medusaId = _medusa.medusaId;
+        int subdivisions = owner.config.subdivisions;
+        VerletPhysics physics = owner.physics;
+        MedusaVerletBridge bridge = owner.bridge;
+        int medusaId = owner.medusaId;
 
         // 引用 Bell Top 的最後一排頂點作為起點
-        var vertexRows = _medusa.bell.top.vertexRows;
+        var vertexRows = owner.bellTop.GetVertexRows();
         
         // ★ 新增：用來暫存物理頂點完整資訊的列表 (為了傳遞給渲染網格用)
         var marginPhysicsInfos = new List<List<MedusaBellGeometry.VertexInfo>>();
 
         // --- 1. 建立物理結構 (Verlet Geometry) ---
         
-        int bellMarginWidth = 5* subdivisions;
-        this.bellMarginWidth = bellMarginWidth;
-        int bellMarginHeight = 4;
-
-        bellMarginRows.Clear();
+        _bellMarginWidth = 5* subdivisions;
+        _bellMarginRows.Clear();
 
         for (int y = 0; y < bellMarginHeight; y++)
         {
             List<int> row = new List<int>();
-            // ★ 新增：當前行的資訊列表
             List<MedusaBellGeometry.VertexInfo> infoRow = new List<MedusaBellGeometry.VertexInfo>();
 
-            for (int x = 0; x < bellMarginWidth; x++)
+            for (int x = 0; x < _bellMarginWidth; x++)
             {
                 // 取出 Top 最後一排的頂點作為參考 (Pivot)
                 var pivot = vertexRows[vertexRows.Count - 1][x];
@@ -52,8 +79,8 @@ public class MedusaBellMargin
                 int vertexId = physics.AddVertex(Vector3.zero, isFixed);
 
                 // 計算偏移
-                Vector3 offset = new Vector3(Mathf.Sin(azimuth) * y * 0.06f, y * -0.06f, Mathf.Cos(azimuth) * y * 0.06f);
-                offset *= 0.7f;
+                Vector3 offset = new Vector3(Mathf.Sin(azimuth) * y * offsetSpacing, y * -offsetSpacing, Mathf.Cos(azimuth) * y * offsetSpacing);
+                offset *= offsetMultiplier;
                 
                 bridge.RegisterVertex(medusaId, vertexId, zenith, azimuth, false, offset, 0, isFixed);
                 
@@ -78,7 +105,7 @@ public class MedusaBellMargin
             }
             // 閉合圓環
             row.Add(row[0]);
-            bellMarginRows.Add(row);
+            _bellMarginRows.Add(row);
             
             // ★ 閉合 Info 列表 (複製第一個到最後)
             infoRow.Add(infoRow[0]);
@@ -88,30 +115,26 @@ public class MedusaBellMargin
         // 建立網格彈簧 (Structural Springs)
         for (int y = 1; y < bellMarginHeight; y++)
         {
-            for (int x = 0; x < bellMarginWidth; x++)
+            for (int x = 0; x < _bellMarginWidth; x++)
             {
-                float structuralStrength = 0.02f; 
-                float shearStrength = 0.002f;
-
-                int v0 = bellMarginRows[y][x];         // 當前點
-                int v1 = bellMarginRows[y - 1][x];     // 上方點
-                int v2 = bellMarginRows[y][x + 1];     // 右方點
-                int v3 = bellMarginRows[y - 1][x + 1]; // 右上方點
+                int v0 = _bellMarginRows[y][x];         // 當前點
+                int v1 = _bellMarginRows[y - 1][x];     // 上方點
+                int v2 = _bellMarginRows[y][x + 1];     // 右方點
+                int v3 = _bellMarginRows[y - 1][x + 1]; // 右上方點
 
                 // 垂直與水平彈簧 (Structural)
-                physics.AddSpring(v0, v1, structuralStrength, 1.2f);
-                physics.AddSpring(v0, v2, structuralStrength, 1.2f);
-
+                physics.AddSpring(v0, v1, structuralStrength, springRestLength);
+                physics.AddSpring(v0, v2, structuralStrength, springRestLength);
                 // 交叉彈簧 (Shear) - 增加此部分能大幅減少網面變形
-                physics.AddSpring(v0, v3, shearStrength, 1f);
-                physics.AddSpring(v1, v2, shearStrength, 1f);
+                physics.AddSpring(v0, v3, shearStrength, springRestLength);
+                physics.AddSpring(v1, v2, shearStrength, springRestLength);
             }
         }
 
         // --- 2. 建立渲染網格 (Render Geometry) ---
         
-        MedusaBellGeometry geometryOutside = _medusa.bell.geometryOutside;
-        MedusaBellGeometry geometryInside = _medusa.bell.geometryInside;
+        MedusaBellGeometry geometryOutside = owner.geometryOutside;
+        MedusaBellGeometry geometryInside = owner.geometryInside;
 
         List<List<MedusaBellGeometry.VertexInfo>> marginOuterVertexRows = new List<List<MedusaBellGeometry.VertexInfo>>();
         List<List<MedusaBellGeometry.VertexInfo>> marginInnerVertexRows = new List<List<MedusaBellGeometry.VertexInfo>>();
@@ -125,7 +148,7 @@ public class MedusaBellMargin
             List<MedusaBellGeometry.VertexInfo> outerRow = new List<MedusaBellGeometry.VertexInfo>();
             List<MedusaBellGeometry.VertexInfo> innerRow = new List<MedusaBellGeometry.VertexInfo>();
             
-            for (int x = 0; x < bellMarginWidth; x++)
+            for (int x = 0; x < _bellMarginWidth; x++)
             {
                 var outerVertex = vertexRows[vertexRows.Count - 1][x];
                 var innerVertex = geometryInside.AddVertexFromParams(outerVertex.zenith, outerVertex.azimuth, innerSide, 0);
@@ -142,14 +165,13 @@ public class MedusaBellMargin
         // 其餘層 (物理驅動)
         List<MedusaBellGeometry.VertexInfo> downRowOutside = new List<MedusaBellGeometry.VertexInfo>();
         List<MedusaBellGeometry.VertexInfo> downRowInside = new List<MedusaBellGeometry.VertexInfo>();
-        float marginDepth = 0.025f;
 
         for (int y = 2; y < bellMarginHeight; y++)
         {
             List<MedusaBellGeometry.VertexInfo> outerRow = new List<MedusaBellGeometry.VertexInfo>();
             List<MedusaBellGeometry.VertexInfo> innerRow = new List<MedusaBellGeometry.VertexInfo>();
             
-            for (int x = 0; x < bellMarginWidth; x++)
+            for (int x = 0; x < _bellMarginWidth; x++)
             {
                 // ★ 關鍵修正：從 marginPhysicsInfos 獲取完整的 VertexInfo
                 // 這樣 AddVertexFromVertices 才能算出正確的 UV 和 Zenith
@@ -190,7 +212,7 @@ public class MedusaBellMargin
 
         for (int y = 1; y < marginVertexRowsOutside.Count; y++)
         {
-            for (int x = 0; x < bellMarginWidth; x++)
+            for (int x = 0; x < _bellMarginWidth; x++)
             {
                 var v0 = marginVertexRowsOutside[y - 1][x].ptr;
                 var v1 = marginVertexRowsOutside[y - 1][x + 1].ptr;
@@ -210,7 +232,7 @@ public class MedusaBellMargin
 
         for (int y = 1; y < marginVertexRowsInside.Count; y++)
         {
-            for (int x = 0; x < bellMarginWidth; x++)
+            for (int x = 0; x < _bellMarginWidth; x++)
             {
                 var v0 = marginVertexRowsInside[y - 1][x].ptr;
                 var v1 = marginVertexRowsInside[y - 1][x + 1].ptr;
@@ -221,5 +243,10 @@ public class MedusaBellMargin
                 geometryInside.AddFace(v1, v2, v3);
             }
         }
+    }
+    
+    public override void UpdateModule(float dt)
+    {
+        // 若有部件特有的 Shader 參數更新，在此實作
     }
 }

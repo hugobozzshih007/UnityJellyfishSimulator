@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8017993e72bf246e19d7ae4b11ccf1b3, type: 3}
+  m_Name: Chrysaora_Jellyfish
+  m_EditorClassIdentifier: Assembly-CSharp::MedusaSpeciesConfig
+  bellTopPrefab: {fileID: 7450883293292569226, guid: 0dd15b232bbe94d9c96b142f8c74bb1e, type: 3}
+  bellBottomPrefab: {fileID: 2376177290314456440, guid: 498ebf5b33a0d40a896dd73f5877edf0, type: 3}
+  bellMarginPrefab: {fileID: 8564240215379881575, guid: 822269f19ccaa432ab48fa940461742e, type: 3}
+  oralArmsPrefab: {fileID: 1256874815711271062, guid: f1cc7745c078f49d0a46abc3b5c4d78f, type: 3}
+  tentaclesPrefab: {fileID: 6259884183303671005, guid: f03374e0824a74e68ab1122aae9da218, type: 3}
+  subdivisions: 40
+  moveSpeedMultiplier: 2
+  frequencyBoost: 3
+  currentFreqMultiplier: 1
+  freqLerpSpeed: 2
+  jellyfishMaterialOutside: {fileID: 2100000, guid: 48a4780308b64464fa94faf9d26078d7, type: 2}
+  jellyfishMaterialInside: {fileID: 2100000, guid: e744df7e3685a426694b36c9b1141278, type: 2}
+  oralArmsMaterial: {fileID: 2100000, guid: 59c07e92637a84561aa3a27c07eda18a, type: 2}
+  tentaclesMaterial: {fileID: 2100000, guid: 2320ec10757e24fecadc07a15e1ed0dd, type: 2}

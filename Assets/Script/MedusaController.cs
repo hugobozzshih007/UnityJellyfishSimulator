@@ -18,7 +18,7 @@ public class MedusaController : MonoBehaviour
     public void Initialize(Medusa medusa)
     {
         _medusa = medusa;
-        this.moveSpeedMultiplier = medusa.moveSpeedMultiplier;
+        this.moveSpeedMultiplier = medusa.config.moveSpeedMultiplier;
     }
 
     // [新增] 供 Medusa.cs 讀取轉向強度以影響擺動頻率
