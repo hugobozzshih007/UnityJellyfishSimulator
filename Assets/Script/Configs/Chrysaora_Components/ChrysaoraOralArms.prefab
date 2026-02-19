@@ -44,11 +44,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1ab277c129e4426d8388f9a19089cc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChrysaoraOralArms
-  randomSeed: 0
+  randomSeed: 1
   stretchStiffness: 0.005
   baseBendStiffness: 0.005
   tipBendStiffness: 0.005
-  armLength: 8
+  armLength: 5
   physicsNodes: 50
   attachmentZenith: 0.2
   rootDistributionRadius: 0.4
@@ -65,4 +65,4 @@ MonoBehaviour:
   tubeThinStart: 0.4
   tubeThinScale: 0.05
   visualSegmentsPerNode: 6
-  totalTwist: 0
+  totalTwist: 360

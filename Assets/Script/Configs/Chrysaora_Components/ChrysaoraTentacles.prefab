@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChrysaoraTentacles
   tentacleNum: 20
-  tentacleLength: 20
+  tentacleLength: 30
   tentacleRadius: 0.012
   tentacleRadialSegments: 6
   springStrength: 0.1
